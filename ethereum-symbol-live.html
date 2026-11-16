@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>◆ ETH LIQUID CRYSTAL — LIVE PRICE</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 417'%3E%3Cpath fill='%233ef58f' d='M127.962 0L0 213.32l127.962 74.544V154.158z'/%3E%3Cpath fill='%231fae60' d='M127.961 0l-2.795 9.5v275.668l2.795 2.49 127.962-74.44z'/%3E%3Cpath fill='%23179353' d='M0 213.32l127.96 74.638v-132.75z'/%3E%3Cpath fill='%230b4f2c' d='M127.961 287.958l127.96-74.537-127.96-58.212z'/%3E%3Cpath fill='%2331d97d' d='M127.962 416.905v-104.72L0 238.868z'/%3E%3Cpath fill='%2311703f' d='M127.961 312.187l-1.575 1.91v98.199l1.575 4.6L256 238.09z'/%3E%3C/svg%3E">
+<style>
+:root{
+  --mono: ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --lcd:#2bff88; --dim:#6fae8b; --muted:#4e6b58; --red:#ff4d5e; --amber:#ffb454;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:radial-gradient(1100px 640px at 50% 42%, #0a1a11, #04070a 72%);
+  color:#d2ead9; font-family:var(--mono); overflow:hidden;
+  display:flex; flex-direction:column;
+}
+body::after{ /* LCD scanline glass */
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:40;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.15) 0 1px, transparent 1px 3px);
+}
+
+/* ---------- header / footer ---------- */
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:13px 18px;font-size:10px;letter-spacing:2px;color:var(--muted)}
+.brand{color:var(--lcd);text-shadow:0 0 10px rgba(43,255,136,.5);letter-spacing:4px;font-weight:700}
+.brand .d1{color:#1c6b40;text-shadow:none}
+.hstat{display:flex;gap:12px;align-items:center}
+.live{color:var(--lcd);display:inline-flex;align-items:center;gap:5px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--lcd);box-shadow:0 0 8px var(--lcd);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.foot{padding:10px 14px 14px;text-align:center;font-size:9px;color:var(--muted);letter-spacing:1.5px;line-height:1.8}
+
+/* ---------- crystal stage ---------- */
+.stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.dcol{display:flex;flex-direction:column;align-items:center;gap:8px}
+.pairlabel{font-size:clamp(12px,2vh,17px);letter-spacing:5px;color:var(--dim)}
+.dwrap{position:relative;height:min(72vh,680px);max-width:92vw;aspect-ratio:256/417;cursor:pointer;
+  -webkit-tap-highlight-color:transparent}
+.dwrap:focus{outline:none}
+.dwrap svg{width:100%;height:100%;display:block;
+  filter:drop-shadow(0 0 24px rgba(43,255,136,.28));transition:filter .5s}
+.dwrap.down svg{filter:drop-shadow(0 0 24px rgba(255,77,94,.22))}
+
+/* facets — light comes from the left, official Ethereum geometry */
+svg .f1,svg .f2,svg .f3,svg .f4,svg .f5,svg .f6{transition:fill .7s}
+.dwrap.up svg .f2{fill:#3ef58f} .dwrap.up svg .f4{fill:#31d97d} .dwrap.up svg .f1{fill:#1fae60}
+.dwrap.up svg .f6{fill:#179353} .dwrap.up svg .f3{fill:#11703f} .dwrap.up svg .f5{fill:#0b4f2c}
+.dwrap.down svg .f2{fill:#ff6b7a} .dwrap.down svg .f4{fill:#e85060} .dwrap.down svg .f1{fill:#cc3345}
+.dwrap.down svg .f6{fill:#b02839} .dwrap.down svg .f3{fill:#8f1f2e} .dwrap.down svg .f5{fill:#6b1622}
+
+/* ---------- price inside the crystal ---------- */
+.pricebox{position:absolute;left:0;right:0;top:52.5%;transform:translateY(-50%);
+  text-align:center;pointer-events:none}
+.price{color:#f2fff7;font-weight:700;letter-spacing:1px;white-space:nowrap;
+  text-shadow:0 0 12px rgba(43,255,136,.85),0 0 40px rgba(43,255,136,.35)}
+.dwrap.down .price{text-shadow:0 0 12px rgba(255,77,94,.85),0 0 40px rgba(255,77,94,.3)}
+.cents{font-size:.55em;opacity:.92}
+@keyframes tickUp{0%{opacity:.55}100%{opacity:1}}
+.dwrap.pulse-up .price{animation:tickUp .4s ease-out}
+.dwrap.pulse-down .price{animation:tickUp .4s ease-out}
+
+/* ---------- readout under the crystal ---------- */
+.under{display:flex;gap:14px;align-items:baseline;font-size:clamp(12px,2.1vh,18px);letter-spacing:1px}
+#tick{font-size:.85em}
+.up{color:var(--lcd)} .down{color:var(--red)} .flat{color:var(--amber)}
+.hidden{display:none!important}
+
+@media(max-height:520px){ header{padding:8px 14px} .foot{display:none} }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand"><span class="d1">◆</span> ETH LIQUID CRYSTAL <span class="d1">◆</span></span>
+  <span class="hstat">
+    <span class="live"><span class="dot"></span>LIVE</span>
+    <span id="src">CONNECTING…</span>
+  </span>
+</header>
+
+<main class="stage">
+  <div class="dcol">
+    <div class="pairlabel" id="pairLabel">ETH / USD</div>
+    <div class="dwrap up" id="dwrap" title="Click to switch pair" tabindex="0">
+      <svg viewBox="0 0 256 417" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path class="f1" d="M127.961 0l-2.795 9.5v275.668l2.795 2.49 127.962-74.44z"/>
+        <path class="f2" d="M127.962 0L0 213.32l127.962 74.544V154.158z"/>
+        <path class="f3" d="M127.961 312.187l-1.575 1.91v98.199l1.575 4.6L256 238.09z"/>
+        <path class="f4" d="M127.962 416.905v-104.72L0 238.868z"/>
+        <path class="f5" d="M127.961 287.958l127.96-74.537-127.96-58.212z"/>
+        <path class="f6" d="M0 213.32l127.96 74.638v-132.75z"/>
+      </svg>
+      <div class="pricebox"><div class="price digital" id="price">···</div></div>
+    </div>
+    <div class="under">
+      <span id="tick" class="flat">◆</span>
+      <span id="chg24" class="flat">··· 24H</span>
+    </div>
+  </div>
+</main>
+
+<div class="foot">
+  CLICK THE CRYSTAL TO SWITCH PAIR — ETH/USD · EUR · GBP · JPY · BRL · BTC<br>
+  ARROW = LAST TICK DIRECTION · % = 24H CHANGE · DATA: BINANCE LIVE STREAM (REST + COINGECKO FALLBACK) · NOT FINANCIAL ADVICE
+</div>
+
+<script>
+'use strict';
+/* ============ CONFIG ============ */
+var $=function(id){return document.getElementById(id);};
+var PAIRS=[
+  {sym:'ETHUSDT',label:'ETH / USD',prefix:'$',dec:2,cg:'usd'},
+  {sym:'ETHEUR', label:'ETH / EUR',prefix:'€',dec:2,cg:'eur'},
+  {sym:'ETHGBP', label:'ETH / GBP',prefix:'£',dec:2,cg:'gbp'},
+  {sym:'ETHJPY', label:'ETH / JPY',prefix:'¥',dec:0,cg:'jpy'},
+  {sym:'ETHBRL', label:'ETH / BRL',prefix:'R$',dec:2,cg:'brl'},
+  {sym:'ETHBTC', label:'ETH / BTC',prefix:'₿',dec:6,cg:'btc'}
+];
+var idx=0, lastPrice=null, lastTick=null;
+var ws=null, wsTry=0, restTimer=null, cgTimer=null, binFail=0, firstGuard=null;
+
+function fmt(v,dec){return v.toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec});}
+function setSource(t){ $('src').textContent=t; }
+
+/* ============ RENDER ============ */
+function fitPrice(){
+  var el=$('price'), w=$('dwrap');
+  var len=parseFloat(el.getAttribute('data-len'))||7;
+  var fs=Math.min(w.clientHeight*0.135, w.clientWidth*1.32/len, 88);
+  el.style.fontSize=Math.max(fs,16)+'px';
+}
+function renderQuote(price,chg,src){
+  if(price==null||isNaN(price)||price<=0) return;
+  var p=PAIRS[idx];
+  var s=fmt(price,p.dec);
+  var whole=s, cents='';
+  if(p.dec>0){
+    var dot=s.lastIndexOf('.');
+    if(dot>0){ whole=s.slice(0,dot); cents=s.slice(dot); }
+  }
+  var el=$('price');
+  el.innerHTML=p.prefix+whole+(cents?'<span class="cents">'+cents+'</span>':'');
+  el.setAttribute('data-len', whole.length+(cents?cents.length*0.55:0)+p.prefix.length*0.75);
+  fitPrice();
+  /* tick direction pulse */
+  if(lastPrice!=null && price!==lastPrice){
+    lastTick = price>lastPrice ? 'up' : 'down';
+    var dw=$('dwrap');
+    dw.classList.remove('pulse-up','pulse-down');
+    void dw.offsetWidth; /* restart animation */
+    dw.classList.add(lastTick==='up'?'pulse-up':'pulse-down');
+  }
+  lastPrice=price;
+  var tick=$('tick');
+  tick.textContent = lastTick==='up'?'▲':(lastTick==='down'?'▼':'◆');
+  tick.className = lastTick||'flat';
+  /* 24h change + trend palette */
+  var c=$('chg24');
+  var down = !(chg!=null && !isNaN(chg) && chg>=0);
+  if(chg==null||isNaN(chg)){ c.textContent='— 24H'; c.className='flat'; }
+  else{ var up=chg>=0; c.textContent=(up?'▲ +':'▼ ')+chg.toFixed(2)+'% · 24H'; c.className=up?'up':'down'; }
+  var dw=$('dwrap');
+  dw.classList.remove('up','down');
+  dw.classList.add(down?'down':'up');
+  document.title='◆ ETH '+p.prefix+fmt(price,p.dec);
+  if(src) setSource(src);
+}
+
+/* ============ BINANCE WEBSOCKET (primary) ============ */
+function stopTimers(){
+  if(restTimer){ clearInterval(restTimer); restTimer=null; }
+  if(cgTimer){ clearInterval(cgTimer); cgTimer=null; }
+  if(firstGuard){ clearTimeout(firstGuard); firstGuard=null; }
+}
+function connectWS(){
+  var p=PAIRS[idx];
+  stopTimers();
+  try{ if(ws){ ws.onclose=null; ws.onerror=null; ws.onmessage=null; ws.close(); } }catch(e){}
+  try{
+    ws=new WebSocket('wss://stream.binance.com:9443/ws/'+p.sym.toLowerCase()+'@ticker');
+    ws.onopen=function(){ wsTry=0; binFail=0; stopTimers(); setSource('BINANCE LIVE STREAM · WS'); };
+    ws.onmessage=function(ev){
+      try{
+        var d=JSON.parse(ev.data);
+        renderQuote(+d.c, +d.P, 'BINANCE LIVE STREAM · WS');
+      }catch(e){}
+    };
+    ws.onclose=function(){
+      if(curSrc) setSource('STREAM LOST — REST FALLBACK');
+      startRest();
+      if(wsTry<5){ wsTry++; setTimeout(connectWS, Math.min(20000,800*Math.pow(2,wsTry))); }
+    };
+    ws.onerror=function(){ try{ws.close();}catch(e){} };
+    /* safety: if no quote within 2.5s, poll REST while WS opens */
+    firstGuard=setTimeout(function(){ if(lastPrice==null && !restTimer && !cgTimer) startRest(); },2500);
+  }catch(e){ startRest(); }
+}
+
+/* ============ REST FALLBACK (Binance poll) ============ */
+async function restPoll(){
+  var p=PAIRS[idx];
+  try{
+    var d=await jget('https://api.binance.com/api/v3/ticker/24hr?symbol='+p.sym);
+    binFail=0;
+    renderQuote(+d.lastPrice, +d.priceChangePercent, 'BINANCE REST · 5S POLL');
+  }catch(e){
+    if(++binFail>=2){ startCg(); }
+    else setSource('BINANCE REST · RETRYING…');
+  }
+}
+function startRest(){
+  stopTimers(); binFail=0;
+  setSource('BINANCE REST · 5S POLL');
+  restPoll();
+  restTimer=setInterval(restPoll,5000);
+}
+
+/* ============ COINGECKO FALLBACK ============ */
+function startCg(){
+  if(cgTimer) return;
+  stopTimers();
+  setSource('COINGECKO · 30S POLL');
+  var poll=async function(){
+    var p=PAIRS[idx];
+    try{
+      var d=await jget('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies='+p.cg+'&include_24hr_change=true');
+      var e=d.ethereum;
+      if(e && e[p.cg]!=null) renderQuote(e[p.cg], e[p.cg+'_24h_change'], 'COINGECKO · 30S POLL');
+    }catch(e2){ setSource('OFFLINE — RETRYING…'); }
+  };
+  poll();
+  cgTimer=setInterval(poll,30000);
+}
+
+/* ============ FETCH HELPER ============ */
+function jget(url,ms){
+  ms=ms||9000;
+  return new Promise(function(resolve,reject){
+    var ctl=('AbortController' in window)?new AbortController():null;
+    var t=setTimeout(function(){ if(ctl)ctl.abort(); reject(new Error('TIMEOUT')); },ms);
+    fetch(url, ctl?{signal:ctl.signal,cache:'no-store'}:{cache:'no-store'})
+      .then(function(r){ clearTimeout(t); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(resolve, function(e){ clearTimeout(t); reject(e); });
+  });
+}
+
+/* ============ PAIR SWITCH ============ */
+function switchPair(){
+  idx=(idx+1)%PAIRS.length;
+  lastPrice=null; lastTick=null;
+  $('pairLabel').textContent=PAIRS[idx].label;
+  $('price').textContent='···';
+  $('price').style.fontSize='';
+  $('tick').textContent='◆'; $('tick').className='flat';
+  $('chg24').textContent='··· 24H'; $('chg24').className='flat';
+  connectWS();
+}
+$('dwrap').addEventListener('click',switchPair);
+$('dwrap').addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); switchPair(); } });
+
+/* ============ GO ============ */
+fitPrice();
+connectWS();
+</script>
+</body>
+</html>
